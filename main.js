@@ -9,16 +9,22 @@ const { readFileAndParse, writeFileAndStringify } = require("./utilis");
 //   const parsedUrl = url.parse(req.url);
 //   if (parsedUrl.pathname === "/delete-file") {
 //     const query = querystring.parse(parsedUrl.query);
-//     if (query.filepath) {
+//     if (!query.filepath) {
+//       res.writeHead(400, { "Content-Type": "text/plain" });
+//       res.end('Missing "filepath" query parameter.');
+//       return;
+//     }
+//     try {
 //       await fs.unlink(query.filepath);
 //       res.writeHead(200, { "Content-Type": "text/plain" });
-//       res.end(" File deleted successfully");
-//     } else {
-//       res.writeHead(200, { "Content-Type": "text/plain" });
+//       res.end("File deleted successfully");
+//     } catch (err) {
+//       res.writeHead(400, { "Content-Type": "text/plain" });
 //       res.end("File not found");
 //     }
 //   }
 // });
+
 // server.listen(4000, () => {
 //   console.log("server running on http://localhost:4000");
 // });
@@ -134,4 +140,42 @@ const { readFileAndParse, writeFileAndStringify } = require("./utilis");
 // server.listen(4000, () => {
 //   console.log("server running on http://localhost:4000");
 // });
+
 // 3) Create a server and handle this route /time?city=London, it should return what time is that city. Try to support few countries like NY, Berlin, Madrid, Pekin, Kiev and etc.
+
+const cityTimezones = {
+  London: "Europe/London",
+  Berlin: "Europe/Berlin",
+  Madrid: "Europe/Madrid",
+  Pekin: "Asia/Shanghai",
+  Kiev: "Europe/Kyiv",
+  NY: "America/New_York",
+};
+
+const server = http.createServer((req, res) => {
+  const parsedUrl = url.parse(req.url);
+  const query = querystring.parse(parsedUrl.query);
+
+  if (parsedUrl.pathname === "/time") {
+    const city = query.city;
+
+    if (!city || !cityTimezones[city]) {
+      res.writeHead(400, { "Content-Type": "text/plain" });
+      res.end("Unsupported or missing city");
+      return;
+    }
+    const timeZone = cityTimezones[city];
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      timeStyle: "full",
+      dateStyle: "full",
+    });
+    const currentTime = formatter.format(new Date());
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end(`Current time in ${city} is ${currentTime}`);
+  }
+});
+
+server.listen(4000, () => {
+  console.log("server running on http://localhost:4000");
+});
